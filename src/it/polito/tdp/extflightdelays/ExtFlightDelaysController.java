@@ -7,7 +7,10 @@ package it.polito.tdp.extflightdelays;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.extflightdelays.model.Airport;
+import it.polito.tdp.extflightdelays.model.AirportPlane;
 import it.polito.tdp.extflightdelays.model.Model;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -35,13 +38,13 @@ public class ExtFlightDelaysController {
     private Button btnAnalizza; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbBoxAeroportoPartenza"
-    private ComboBox<?> cmbBoxAeroportoPartenza; // Value injected by FXMLLoader
+    private ComboBox<Airport> cmbBoxAeroportoPartenza; // Value injected by FXMLLoader
 
     @FXML // fx:id="btnAeroportiConnessi"
     private Button btnAeroportiConnessi; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbBoxAeroportoDestinazione"
-    private ComboBox<?> cmbBoxAeroportoDestinazione; // Value injected by FXMLLoader
+    private ComboBox<Airport> cmbBoxAeroportoDestinazione; // Value injected by FXMLLoader
 
     @FXML // fx:id="numeroTratteTxtInput"
     private TextField numeroTratteTxtInput; // Value injected by FXMLLoader
@@ -49,19 +52,84 @@ public class ExtFlightDelaysController {
     @FXML // fx:id="btnCercaItinerario"
     private Button btnCercaItinerario; // Value injected by FXMLLoader
 
+    private int compagnie = 0;
+    
     @FXML
     void doAnalizzaAeroporti(ActionEvent event) {
 
+    	txtResult.clear();
+    	try {
+    		
+            compagnie = Integer.parseInt(this.compagnieMinimo.getText());
+            if(compagnie<=0)
+            	throw new NumberFormatException();
+            model.creaGrafo(compagnie);
+            
+            cmbBoxAeroportoPartenza.setItems(FXCollections.observableList(model.getVertex()));
+            cmbBoxAeroportoDestinazione.setItems(FXCollections.observableList(model.getVertex()));
+            
+    		
+    	}catch(NumberFormatException nfe) {
+    		txtResult.appendText("Errore. Inserire un numero intero positivo nel campo 'Compagnie minime'. Grazie.");
+    	}
+    	
     }
 
     @FXML
     void doCalcolaAeroportiConnessi(ActionEvent event) {
 
+    	txtResult.clear();
+    	
+        try {
+        	
+        	txtResult.appendText("Aereoporti vicini:\n");
+        	
+        	for(AirportPlane vicino : model.cercaVicini(cmbBoxAeroportoPartenza.getValue())) {
+        		
+        		txtResult.appendText(vicino.getA1()+"  voli("+vicino.getVoli()+")\n");
+        		
+        	}
+        	
+        }catch(NullPointerException npe) {
+          txtResult.appendText("Selezionare un aereoporto, grazie.");
+        }
+    	
     }
 
     @FXML
     void doCercaItinerario(ActionEvent event) {
 
+    	txtResult.clear();  
+    	
+    	try {
+    		
+    		Airport partenza = cmbBoxAeroportoPartenza.getValue();
+    		Airport destinazione = cmbBoxAeroportoDestinazione.getValue();
+          	
+    		int t = Integer.parseInt(this.numeroTratteTxtInput.getText());
+    		  if(t<=0)
+    			  throw new NumberFormatException();
+          	if(t<model.minTratta(partenza, destinazione)) {
+          		txtResult.appendText("per raggiungere tale destinazione sono necessarie alemeno "+model.minTratta(partenza, destinazione)+" tratte");
+          	    return;
+          	}
+    		  
+          	if(model.isConnected(partenza, destinazione)) {
+          		txtResult.appendText("Percorso ottimo:\n");
+              	for(Airport air : model.getPath(partenza, destinazione, t))
+              		txtResult.appendText(air+"\n");
+          	}else
+          		txtResult.appendText("I due aereoporti non sono connessi.");
+          	
+          	
+          	          	
+          }catch(NullPointerException npe) {
+           txtResult.appendText("Selezionare un aereoporto di partenza ed uno di destinazione, grazie.");
+          }
+    	  catch(NumberFormatException nfe) {
+            txtResult.appendText("Selezionare un numero di tratte (intero positivo) , grazie.");
+          }
+    	
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
